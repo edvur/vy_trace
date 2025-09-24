@@ -1,0 +1,84 @@
+// Prisma Schema für Instagram Tracker
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - App Benutzer
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  accounts      InstagramAccount[]
+  subscription  Subscription?
+  
+  @@map("users")
+}
+
+// Instagram Account Model
+model InstagramAccount {
+  id                String    @id @default(cuid())
+  userId            String
+  username          String
+  encryptedPassword String    @db.Text
+  isActive          Boolean   @default(true)
+  lastScrapedAt     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots         Snapshot[]
+  
+  @@index([userId])
+  @@unique([userId, username])
+  @@map("instagram_accounts")
+}
+
+// Snapshot Model - Follower/Following Daten
+model Snapshot {
+  id             String   @id @default(cuid())
+  accountId      String
+  followersCount Int
+  followingCount Int
+  followersData  Json     // Array von Usernames
+  followingData  Json     // Array von Usernames
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  account        InstagramAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  @@index([accountId, createdAt(sort: Desc)])
+  @@map("snapshots")
+}
+
+// Subscription Model
+model Subscription {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  plan       Plan     @default(FREE)
+  validUntil DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("subscriptions")
+}
+
+// Subscription Plans
+enum Plan {
+  FREE
+  PRO
+  PREMIUM
+}

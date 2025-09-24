@@ -51,3 +51,4 @@ web-build/
 # PostgreSQL
 *.sql
 !migrations/*.sql
+packages/database/.env
